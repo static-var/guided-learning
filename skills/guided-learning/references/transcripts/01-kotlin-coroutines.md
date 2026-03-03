@@ -19,19 +19,28 @@ Teach me Kotlin coroutines from scratch (Android context).
 - [ ] Common pitfalls (`GlobalScope`, leaks, blocking main)
 
 ### Chunk
-A coroutine is a lightweight unit of work that can **pause** (suspend) and later **resume** without blocking a thread. Threads are expensive OS resources; coroutines are cheap, so you can run lots of them on a small number of threads.
+Imagine your Android app needs to fetch a user profile from the network. On a normal thread, the code would look like:
 
-Coroutines matter on Android because you want responsive UI: do slow work off the main thread, but still write code that *reads* like normal sequential code instead of callbacks everywhere.
+```
+fun loadProfile() {
+    val user = api.getUser()  // blocks thread, waits for network
+    textView.text = user.name  // update UI
+}
+```
 
-### Visual (optional)
-| Concept | Thread | Coroutine |
-|---|---:|---:|
-| Cost | high | low |
-| Waiting for network | blocks thread | suspends (thread free) |
-| Count you can run | small | huge |
+If you run this on the main thread, the whole UI freezes while waiting for the network — no scrolling, no button presses, nothing. The classic fix is to spin up a new thread for the network call, then switch back to the main thread to update the UI. But threads are expensive — each one eats ~1MB of stack memory, and creating/destroying them isn't free.
+
+A coroutine is a lightweight alternative. Instead of blocking a whole thread while waiting, it **suspends** — it steps aside, frees the thread, and picks back up later when the result arrives. Think of it like putting a bookmark in your code. The thread can go do other work, and when the network responds, your code resumes from the bookmark.
+
+The result: you can have thousands of coroutines running on just a handful of threads, and your code still reads top-to-bottom like normal sequential code — no callback nesting.
+
+```
+Thread approach:     1 thread per task → 1000 tasks = 1000 threads (~1GB RAM)
+Coroutine approach:  1000 coroutines → shared thread pool (a few MB)
+```
 
 ### Question
-If coroutines are "cheap", does that mean they don't use threads at all?
+If a coroutine "suspends" and frees the thread, does that mean coroutines don't use threads at all?
 
 <!-- LESSON_STATE: topic=coroutines step=1 mastery=0.2 last_q=threads-needed -->
 
@@ -52,20 +61,30 @@ They still use threads, just managed by dispatchers/schedulers. Cheap means not 
 - [ ] Common pitfalls (`GlobalScope`, leaks, blocking main)
 
 ### Chunk
-Correct. Coroutines run **on top of** threads; "cheap" means you don't pay the OS cost per task. The dispatcher decides which threads are used; the coroutine can hop around.
+✅ Correct. Coroutines run **on top of** threads — a dispatcher decides which thread pool to use, and coroutines hop between threads as needed.
 
-Next: `suspend` doesn't mean "runs in background." It means "this function may pause here." While paused (e.g., waiting on network), the thread can run other work.
+Now let's walk through what `suspend` actually means. Say you write this:
 
-### Visual (optional)
-```mermaid
-flowchart LR
-A[Coroutine starts] --> B[suspend: waiting]
-B -->|thread freed| C[other work runs]
-B -->|resume later| D[continue code]
+```kotlin
+suspend fun getUser(): User {
+    val response = httpClient.get("/user")  // suspends here
+    return response.toUser()
+}
+```
+
+When execution hits `httpClient.get(...)`, the coroutine doesn't spin-wait or block. Instead, it saves its state (local variables, where it was in the function) and **releases the thread**. The thread is now free to run other coroutines.
+
+Later, when the HTTP response arrives, the dispatcher picks up a thread (maybe the same one, maybe different) and resumes your coroutine right where it left off — `response` now holds the result, and `toUser()` runs.
+
+Here's the key insight: `suspend` doesn't mean "runs in the background." It means "this function **might pause here**." The function itself doesn't decide which thread it runs on — that's the dispatcher's job. You could call a `suspend fun` on `Dispatchers.Main` and it would still suspend/resume on the main thread.
+
+```
+Before suspend:    Thread-1 running coroutine-A
+During suspend:    Thread-1 free → picks up coroutine-B
+After resume:      Thread-3 resumes coroutine-A (dispatcher chose Thread-3)
 ```
 
 ### Question
+If `suspend` doesn't control which thread you're on, is a `suspend fun` that does network I/O automatically safe to call from the main thread?
 
-Is a suspend fun automatically executed on Dispatchers.IO just because it might wait on network?
-
-<!-- LESSON_STATE: topic=coroutines step=2 mastery=0.35 last_q=suspend-dispatcher -->
+<!-- LESSON_STATE: topic=coroutines step=2 mastery=0.35 last_q=suspend-main-safety -->
