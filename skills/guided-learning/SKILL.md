@@ -36,12 +36,15 @@ This skill should be used when:
 If user changes topic completely, reset TODO and start a new lesson.
 
 ## Web freshness & sources (best-effort, not magic)
-Goal: avoid outdated facts **when the topic is time-sensitive** (APIs, pricing, regulations, “latest”, model/provider info).
-- If you have web/search tools available:
+Only search the web when the topic **has versions that change over time** — libraries, frameworks, SDKs, databases, operating systems, APIs, pricing, regulations, model/provider info.
+
+**Do NOT web-search** for stable concepts that don't version: algorithms, data structures, design patterns (MVVM, MVI, etc.), math, language fundamentals, computer science theory. Teach these from knowledge directly.
+
+- If the topic is versioned AND you have web/search tools available:
   - do a quick check (prefer official docs/specs/vendor changelogs)
   - cite 1–3 sources
-  - don’t pull random blogs unless official sources don’t exist
-- If you do NOT have web/search access:
+  - don't pull random blogs unless official sources don't exist
+- If the topic is versioned but you do NOT have web/search access:
   - say **“I can’t verify via web tools in this environment.”**
   - either ask user for links OR proceed with stable fundamentals and clearly label it as “unverified freshness”.
 

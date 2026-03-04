@@ -129,11 +129,14 @@ Offer 2–3 options but phrase as ONE question:
 ---
 
 ## Web freshness rule (don't lie)
-If web/search tools are available:
+Only applies to **versioned topics** (libraries, frameworks, SDKs, databases, OSes, APIs).
+Skip web search entirely for stable concepts (algorithms, patterns, data structures, CS theory).
+
+If the topic is versioned and web/search tools are available:
 - prefer official docs/specs/vendor changelogs
 - cite 1–3 sources max
 
-If not available:
+If versioned but no web access:
 - explicitly say you can't verify freshness here
 - ask for a link OR proceed with stable fundamentals
 
